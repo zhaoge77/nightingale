@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/toolkits/pkg/file"
@@ -28,22 +29,22 @@ func NewPluginScheduler(p *Plugin) *PluginScheduler {
 	return &scheduler
 }
 
-func (this *PluginScheduler) Schedule() {
+func (p *PluginScheduler) Schedule() {
 	go func() {
 		for {
 			select {
-			case <-this.Ticker.C:
-				PluginRun(this.Plugin)
-			case <-this.Quit:
-				this.Ticker.Stop()
+			case <-p.Ticker.C:
+				PluginRun(p.Plugin)
+			case <-p.Quit:
+				p.Ticker.Stop()
 				return
 			}
 		}
 	}()
 }
 
-func (this *PluginScheduler) Stop() {
-	close(this.Quit)
+func (p *PluginScheduler) Stop() {
+	close(p.Quit)
 }
 
 func PluginRun(plugin *Plugin) {
@@ -57,7 +58,8 @@ func PluginRun(plugin *Plugin) {
 	}
 
 	logger.Debug(fpath, " running")
-	cmd := exec.Command(fpath)
+	params := strings.Split(plugin.Params, " ")
+	cmd := exec.Command(fpath, params...)
 	cmd.Dir = filepath.Dir(fpath)
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -97,9 +99,11 @@ func PluginRun(plugin *Plugin) {
 	// exec successfully
 	data := stdout.Bytes()
 	if len(data) == 0 {
-		logger.Debug("stdout of", fpath, "is blank")
+		logger.Debug("stdout of ", fpath, " is blank")
 		return
 	}
+
+	logger.Debug(fpath, " stdout: ", string(data))
 
 	var items []*dataobj.MetricValue
 	err = json.Unmarshal(data, &items)

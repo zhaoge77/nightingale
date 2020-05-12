@@ -264,6 +264,9 @@ class Detail extends Component<RouteComponentProps & WrappedComponentProps> {
                           }, {
                             title: <FormattedMessage id="event.table.scene.value" />,
                             dataIndex: 'value',
+                          }, {
+                            title: 'Extra',
+                            dataIndex: 'extra',
                           },
                         ]}
                         pagination={false}
